@@ -1,0 +1,153 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin & Auth Models
+model Admin {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model OTP {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  purpose   OTPPurpose
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, purpose])
+  @@map("otps")
+}
+
+enum OTPPurpose {
+  FORGOT_PASSWORD
+  VERIFY_EMAIL
+}
+
+enum SchemeType {
+  SEMESTER
+  YEAR
+}
+
+// Academic Structure Models
+model University {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+
+  @@map("universities")
+}
+
+model Course {
+  id           String     @id @default(uuid())
+  name         String
+  code         String?
+  universityId String
+  schemeType   SchemeType @default(SEMESTER)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  terms      Term[]
+
+  @@unique([universityId, name])
+  @@map("courses")
+}
+
+model Term {
+  id        String     @id @default(uuid())
+  courseId  String
+  type      SchemeType
+  value     Int        // 1-8 for semester, 1-4 for year
+  label     String     // e.g., "Semester 3", "Year 2"
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  subjects Subject[]
+
+  @@unique([courseId, value])
+  @@index([courseId])
+  @@map("terms")
+}
+
+model Subject {
+  id        String   @id @default(uuid())
+  name      String
+  code      String?
+  termId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime   @updatedAt
+
+  term           Term             @relation(fields: [termId], references: [id], onDelete: Cascade)
+  syllabus       Syllabus?
+  questionPapers QuestionPaper[]
+  notes          Notes[]
+
+  @@unique([termId, name])
+  @@index([termId])
+  @@map("subjects")
+}
+
+// Content Models
+model Syllabus {
+  id        String   @id @default(uuid())
+  subjectId String   @unique
+  filePath  String
+  year      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@map("syllabi")
+}
+
+model QuestionPaper {
+  id        String   @id @default(uuid())
+  subjectId String
+  filePath  String
+  year      String
+  month     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId, year])
+  @@map("question_papers")
+}
+
+model Notes {
+  id        String   @id @default(uuid())
+  subjectId String
+  filePath  String
+  unit      String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId, unit])
+  @@map("notes")
+}

@@ -1,0 +1,1040 @@
+{
+  "info": {
+    "_postman_id": "f7c9b3fb-2a64-4c51-9d6b-6f9624d8e0bd",
+    "name": "Last Min Answers API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for Last Min Answers Express API. Uses collection-level bearer auth populated from the login response."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000/api" },
+    { "key": "admin_email", "value": "admin@example.com" },
+    { "key": "admin_password", "value": "ChangeMe123" },
+    { "key": "new_password", "value": "NewPass123" },
+    { "key": "otp_value", "value": "000000" },
+    { "key": "university_id", "value": "" },
+    { "key": "course_id", "value": "" },
+    { "key": "subject_id", "value": "" },
+    { "key": "syllabus_id", "value": "" },
+    { "key": "question_paper_id", "value": "" },
+    { "key": "notes_id", "value": "" },
+    {
+      "key": "sample_pdf",
+      "value": "f:/Last Min answers/server/uploads/sample.pdf"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', () => pm.expect(json.status || json.success).to.be.ok);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/login",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "login"]
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Login success flag', () => pm.expect(json.success).to.be.true);",
+                  "pm.test('Token present', () => pm.expect(json.data && json.data.token).to.be.ok);",
+                  "pm.environment.set('auth_token', json.data.token);",
+                  "if (json.data && json.data.admin && json.data.admin.id) { pm.environment.set('admin_id', json.data.admin.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password (Send OTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "forgot-password"]
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"otp\": \"{{otp_value}}\",\n  \"purpose\": \"FORGOT_PASSWORD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/verify-otp",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "verify-otp"]
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"newPassword\": \"{{new_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "reset-password"]
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send Verification OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/send-verification-otp",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "send-verification-otp"]
+            },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profile (Protected)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/profile",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "profile"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Universities",
+      "item": [
+        {
+          "name": "Create University",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test University\",\n  \"code\": \"TU\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/universities",
+              "host": ["{{base_url}}"],
+              "path": ["universities"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', () => pm.expect(json.success).to.be.true);",
+                  "if (json.data && json.data.id) { pm.environment.set('university_id', json.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Universities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/universities",
+              "host": ["{{base_url}}"],
+              "path": ["universities"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get University",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/universities/{{university_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["universities", "{{university_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update University",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated University\",\n  \"code\": \"UU\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/universities/{{university_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["universities", "{{university_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete University",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/universities/{{university_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["universities", "{{university_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"B.Tech CSE\",\n  \"code\": \"CSE\",\n  \"universityId\": \"{{university_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/courses",
+              "host": ["{{base_url}}"],
+              "path": ["courses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', () => pm.expect(json.success).to.be.true);",
+                  "if (json.data && json.data.id) { pm.environment.set('course_id', json.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/courses?universityId={{university_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["courses"],
+              "query": [{ "key": "universityId", "value": "{{university_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Course",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/courses/{{course_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "{{course_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Course",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Course\",\n  \"code\": \"CSEU\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/courses/{{course_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "{{course_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Course",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/courses/{{course_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "{{course_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Subjects",
+      "item": [
+        {
+          "name": "Create Subject",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Data Structures\",\n  \"code\": \"DS\",\n  \"courseId\": \"{{course_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/subjects",
+              "host": ["{{base_url}}"],
+              "path": ["subjects"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', () => pm.expect(json.success).to.be.true);",
+                  "if (json.data && json.data.id) { pm.environment.set('subject_id', json.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Subjects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subjects?courseId={{course_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["subjects"],
+              "query": [{ "key": "courseId", "value": "{{course_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Subject",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subjects/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["subjects", "{{subject_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Subject",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Subject\",\n  \"code\": \"DSU\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/subjects/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["subjects", "{{subject_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Subject",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subjects/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["subjects", "{{subject_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Syllabus",
+      "item": [
+        {
+          "name": "Upload Syllabus",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "subjectId",
+                  "value": "{{subject_id}}",
+                  "type": "text"
+                },
+                { "key": "year", "value": "2025", "type": "text" },
+                { "key": "file", "type": "file", "src": "{{sample_pdf}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/syllabus",
+              "host": ["{{base_url}}"],
+              "path": ["syllabus"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', () => pm.expect(json.success).to.be.true);",
+                  "if (json.data && json.data.id) { pm.environment.set('syllabus_id', json.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Syllabus by Subject",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/syllabus/subject/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["syllabus", "subject", "{{subject_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Syllabus",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/syllabus/{{syllabus_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["syllabus", "{{syllabus_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Question Papers",
+      "item": [
+        {
+          "name": "Upload Question Paper",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "subjectId",
+                  "value": "{{subject_id}}",
+                  "type": "text"
+                },
+                { "key": "year", "value": "2024", "type": "text" },
+                { "key": "month", "value": "Dec", "type": "text" },
+                { "key": "file", "type": "file", "src": "{{sample_pdf}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/question-papers",
+              "host": ["{{base_url}}"],
+              "path": ["question-papers"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', () => pm.expect(json.success).to.be.true);",
+                  "if (json.data && json.data.id) { pm.environment.set('question_paper_id', json.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Question Papers by Subject",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/question-papers/subject/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["question-papers", "subject", "{{subject_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Question Paper",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/question-papers/{{question_paper_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["question-papers", "{{question_paper_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Question Paper",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "year", "value": "2025", "type": "text" },
+                { "key": "month", "value": "May", "type": "text" },
+                { "key": "file", "type": "file", "src": "{{sample_pdf}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/question-papers/{{question_paper_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["question-papers", "{{question_paper_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Question Paper",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/question-papers/{{question_paper_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["question-papers", "{{question_paper_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notes",
+      "item": [
+        {
+          "name": "Upload Notes",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "subjectId",
+                  "value": "{{subject_id}}",
+                  "type": "text"
+                },
+                { "key": "unit", "value": "1", "type": "text" },
+                { "key": "title", "value": "Intro", "type": "text" },
+                { "key": "file", "type": "file", "src": "{{sample_pdf}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/notes",
+              "host": ["{{base_url}}"],
+              "path": ["notes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Success true', () => pm.expect(json.success).to.be.true);",
+                  "if (json.data && json.data.id) { pm.environment.set('notes_id', json.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Notes by Subject",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notes/subject/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["notes", "subject", "{{subject_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notes/{{notes_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["notes", "{{notes_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Notes",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "unit", "value": "2", "type": "text" },
+                { "key": "title", "value": "Updated Intro", "type": "text" },
+                { "key": "file", "type": "file", "src": "{{sample_pdf}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/notes/{{notes_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["notes", "{{notes_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Notes",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notes/{{notes_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["notes", "{{notes_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
