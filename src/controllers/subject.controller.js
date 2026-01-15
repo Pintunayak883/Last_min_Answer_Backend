@@ -86,14 +86,29 @@ class SubjectController {
                   course: { include: { university: true } },
                 },
               },
+              syllabus: {
+                select: {
+                  id: true,
+                },
+              },
               _count: {
                 select: {
-                  syllabus: true,
                   questionPapers: true,
                   notes: true,
                 },
               },
             },
+          });
+
+          subjects = subjects.map((subject) => {
+            const { syllabus, ...rest } = subject;
+            return {
+              ...rest,
+              _count: {
+                ...subject._count,
+                syllabus: syllabus ? 1 : 0,
+              },
+            };
           });
           await cacheService.set(cacheKey, subjects);
         }
@@ -121,14 +136,29 @@ class SubjectController {
                 course: { include: { university: true } },
               },
             },
+            syllabus: {
+              select: {
+                id: true,
+              },
+            },
             _count: {
               select: {
-                syllabus: true,
                 questionPapers: true,
                 notes: true,
               },
             },
           },
+        });
+
+        courseSubjects = courseSubjects.map((subject) => {
+          const { syllabus, ...rest } = subject;
+          return {
+            ...rest,
+            _count: {
+              ...subject._count,
+              syllabus: syllabus ? 1 : 0,
+            },
+          };
         });
         await cacheService.set(courseCacheKey, courseSubjects);
       }
