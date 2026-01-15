@@ -99,7 +99,7 @@ model Subject {
   updatedAt DateTime   @updatedAt
 
   term           Term             @relation(fields: [termId], references: [id], onDelete: Cascade)
-  syllabus       Syllabus?
+  syllabus       Syllabus[]
   questionPapers QuestionPaper[]
   notes          Notes[]
 
