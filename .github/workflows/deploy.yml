@@ -1,4 +1,4 @@
-name: Deploy Backend
+name: Deploy Admin Frontend
 
 on:
   push:
@@ -17,23 +17,21 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Backend
+      - name: Build & Deploy Admin Frontend
         run: |
           ssh -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
 
-            # Load NVM (IMPORTANT for non-interactive shell)
+            # Load NVM
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-            cd /var/www/One_Answers_Backend
+            cd /var/www/Last_min_Answer_Admin_Frontend
 
             git reset --hard
-            git clean -fd
             git pull origin main
 
             npm install
-            npx prisma migrate deploy
-            pm2 restart backend
+            npm run build
 
           EOF
