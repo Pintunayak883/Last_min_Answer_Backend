@@ -1,20 +1,37 @@
-- name: Deploy Backend
-  run: |
-    ssh -o StrictHostKeyChecking=no \
-    ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+name: Deploy Backend
 
-      # Non-interactive shell fix
-      export PATH=$PATH:/usr/bin:/usr/local/bin
+on:
+  push:
+    branches: [main]
 
-      cd /var/www/Last_min_Answer_Backend
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-      # Automation rule: server code = github code
-      git reset --hard
-      git clean -fd
-      git pull origin main
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      /usr/bin/npm install
-      /usr/bin/npx prisma migrate deploy
-      /usr/local/bin/pm2 restart backend
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    EOF
+      - name: Deploy Backend
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+
+            cd /var/www/Last_min_Answer_Backend
+
+            git reset --hard
+            git clean -fd
+            git pull origin main
+
+            /usr/bin/npm install
+            /usr/bin/npx prisma migrate deploy
+            /usr/local/bin/pm2 restart backend
+
+          EOF
