@@ -86,6 +86,13 @@ class SubjectController {
                   course: { include: { university: true } },
                 },
               },
+              _count: {
+                select: {
+                  syllabus: true,
+                  questionPapers: true,
+                  notes: true,
+                },
+              },
             },
           });
           await cacheService.set(cacheKey, subjects);
@@ -112,6 +119,13 @@ class SubjectController {
             term: {
               include: {
                 course: { include: { university: true } },
+              },
+            },
+            _count: {
+              select: {
+                syllabus: true,
+                questionPapers: true,
+                notes: true,
               },
             },
           },
