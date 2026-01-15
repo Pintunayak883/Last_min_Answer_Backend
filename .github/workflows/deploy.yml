@@ -1,20 +1,39 @@
-- name: Deploy Backend
-  run: |
-    ssh -o StrictHostKeyChecking=no \
-    ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+name: Deploy Backend
 
-      # Load NVM (IMPORTANT)
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+on:
+  push:
+    branches: [main]
 
-      cd /var/www/Last_min_Answer_Backend
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-      git reset --hard
-      git clean -fd
-      git pull origin main
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      npm install
-      npx prisma migrate deploy
-      pm2 restart backend
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    EOF
+      - name: Deploy Backend
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+
+            # Load NVM (IMPORTANT for non-interactive shell)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+            cd /var/www/Last_min_Answer_Backend
+
+            git reset --hard
+            git clean -fd
+            git pull origin main
+
+            npm install
+            npx prisma migrate deploy
+            pm2 restart backend
+
+          EOF
