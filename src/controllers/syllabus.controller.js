@@ -124,7 +124,7 @@ class SyllabusController {
       let syllabus = await cacheService.get(cacheKey);
 
       if (!syllabus) {
-        syllabus = await prisma.syllabus.findUnique({
+        syllabus = await prisma.syllabus.findMany({
           where: { subjectId },
           include: {
             subject: {
@@ -143,22 +143,17 @@ class SyllabusController {
           },
         });
 
-        if (!syllabus) {
-          return ApiResponse.error(res, 404, "Syllabus not found");
-        }
-
         // Store in cache
         await cacheService.set(cacheKey, syllabus);
       }
 
       // Transform to include fileUrl
       const transformedSyllabus = transformSyllabus(syllabus);
-      // Return as array to match API contract
       return ApiResponse.success(
         res,
         200,
         "Syllabus fetched successfully",
-        transformedSyllabus ? [transformedSyllabus] : []
+        Array.isArray(transformedSyllabus) ? transformedSyllabus : []
       );
     } catch (error) {
       next(error);
