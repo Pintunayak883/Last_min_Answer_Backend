@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const routes = require("./routes");
 const errorHandler = require("./middlewares/error.middleware");
 
@@ -13,7 +14,7 @@ app.set("etag", false); // IMPORTANT: stop 304 drama
 app.use((req, res, next) => {
   res.setHeader(
     "Cache-Control",
-    "no-store, no-cache, must-revalidate, proxy-revalidate"
+    "no-store, no-cache, must-revalidate, proxy-revalidate",
   );
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
@@ -36,7 +37,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 /* =========================
@@ -48,7 +49,7 @@ app.use(express.urlencoded({ extended: true }));
 /* =========================
    STATIC FILES
    ========================= */
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 /* =========================
    API ROUTES

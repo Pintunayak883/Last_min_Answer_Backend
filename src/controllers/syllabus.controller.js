@@ -2,7 +2,6 @@ const prisma = require("../config/database");
 const cacheService = require("../services/cache.service");
 const FileUtil = require("../utils/file.util");
 const ApiResponse = require("../utils/response.util");
-const path = require("path");
 
 // Helper to get relative path for storage
 function getRelativePath(absolutePath) {
@@ -14,31 +13,22 @@ function getRelativePath(absolutePath) {
   return absolutePath.replace(/\\/g, "/");
 }
 
-// Helper to transform syllabus with fileUrl
+// Helper to transform syllabus without full URLs (frontend builds absolute URLs)
 function transformSyllabus(syllabus) {
-  const baseUrl = process.env.BASE_URL || "http://localhost:5000";
-
-  const getCleanPath = (filePath) => {
-    // Extract path starting from 'uploads/'
-    const uploadsIndex = filePath.indexOf("uploads");
-    if (uploadsIndex !== -1) {
-      return filePath.substring(uploadsIndex).replace(/\\/g, "/");
-    }
-    return filePath.replace(/\\/g, "/");
-  };
-
   if (Array.isArray(syllabus)) {
-    return syllabus.map((item) => ({
-      ...item,
-      fileName: item.year ? `Syllabus-${item.year}.pdf` : "syllabus.pdf",
-      fileUrl: `${baseUrl}/${getCleanPath(item.filePath)}`,
-      fileSize: item.fileSize || 0,
-    }));
+    return syllabus.map((item) => {
+      const { fileUrl, ...rest } = item || {};
+      return {
+        ...rest,
+        fileName: item.year ? `Syllabus-${item.year}.pdf` : "syllabus.pdf",
+        fileSize: item.fileSize || 0,
+      };
+    });
   }
+  const { fileUrl, ...rest } = syllabus || {};
   return {
-    ...syllabus,
+    ...rest,
     fileName: syllabus.year ? `Syllabus-${syllabus.year}.pdf` : "syllabus.pdf",
-    fileUrl: `${baseUrl}/${getCleanPath(syllabus.filePath)}`,
     fileSize: syllabus.fileSize || 0,
   };
 }
@@ -100,7 +90,7 @@ class SyllabusController {
         res,
         201,
         "Syllabus uploaded successfully",
-        syllabus
+        syllabus,
       );
     } catch (error) {
       // Clean up uploaded file on error
@@ -153,7 +143,7 @@ class SyllabusController {
         res,
         200,
         "Syllabus fetched successfully",
-        Array.isArray(transformedSyllabus) ? transformedSyllabus : []
+        Array.isArray(transformedSyllabus) ? transformedSyllabus : [],
       );
     } catch (error) {
       next(error);
@@ -186,10 +176,10 @@ class SyllabusController {
 
       // Invalidate cache
       await cacheService.delete(
-        cacheService.getCacheKey.syllabus(syllabus.subjectId)
+        cacheService.getCacheKey.syllabus(syllabus.subjectId),
       );
       await cacheService.delete(
-        cacheService.getCacheKey.subject(syllabus.subjectId)
+        cacheService.getCacheKey.subject(syllabus.subjectId),
       );
 
       return ApiResponse.success(res, 200, "Syllabus deleted successfully");

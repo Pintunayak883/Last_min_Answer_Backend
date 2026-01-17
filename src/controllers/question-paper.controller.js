@@ -13,37 +13,28 @@ function getRelativePath(absolutePath) {
   return absolutePath.replace(/\\/g, "/");
 }
 
-// Helper to transform question papers with fileUrl
+// Helper to transform question papers without full URLs (frontend builds absolute URLs)
 function transformQuestionPapers(papers) {
-  const baseUrl = process.env.BASE_URL || "http://localhost:5000";
-
-  const getCleanPath = (filePath) => {
-    // Extract path starting from 'uploads/'
-    const uploadsIndex = filePath.indexOf("uploads");
-    if (uploadsIndex !== -1) {
-      return filePath.substring(uploadsIndex).replace(/\\/g, "/");
-    }
-    return filePath.replace(/\\/g, "/");
-  };
-
   if (Array.isArray(papers)) {
-    return papers.map((paper) => ({
-      ...paper,
-      fileName:
-        paper.year && paper.month
-          ? `QuestionPaper-${paper.year}-${paper.month}.pdf`
-          : "question-paper.pdf",
-      fileUrl: `${baseUrl}/${getCleanPath(paper.filePath)}`,
-      fileSize: paper.fileSize || 0,
-    }));
+    return papers.map((paper) => {
+      const { fileUrl, ...rest } = paper || {};
+      return {
+        ...rest,
+        fileName:
+          paper.year && paper.month
+            ? `QuestionPaper-${paper.year}-${paper.month}.pdf`
+            : "question-paper.pdf",
+        fileSize: paper.fileSize || 0,
+      };
+    });
   }
+  const { fileUrl, ...rest } = papers || {};
   return {
-    ...papers,
+    ...rest,
     fileName:
       papers.year && papers.month
         ? `QuestionPaper-${papers.year}-${papers.month}.pdf`
         : "question-paper.pdf",
-    fileUrl: `${baseUrl}/${getCleanPath(papers.filePath)}`,
     fileSize: papers.fileSize || 0,
   };
 }
@@ -85,7 +76,7 @@ class QuestionPaperController {
 
       // Invalidate cache
       await cacheService.deleteByPattern(
-        `question-papers:subject:${subjectId}`
+        `question-papers:subject:${subjectId}`,
       );
       await cacheService.delete(cacheService.getCacheKey.subject(subjectId));
 
@@ -93,7 +84,7 @@ class QuestionPaperController {
         res,
         201,
         "Question paper uploaded successfully",
-        questionPaper
+        questionPaper,
       );
     } catch (error) {
       // Clean up uploaded file on error
@@ -147,7 +138,7 @@ class QuestionPaperController {
         res,
         200,
         "Question papers fetched successfully",
-        transformedPapers
+        transformedPapers,
       );
     } catch (error) {
       next(error);
@@ -189,7 +180,7 @@ class QuestionPaperController {
         res,
         200,
         "Question paper fetched successfully",
-        questionPaper
+        questionPaper,
       );
     } catch (error) {
       next(error);
@@ -222,7 +213,7 @@ class QuestionPaperController {
       // If new file uploaded, delete old file
       if (req.file) {
         await FileUtil.deleteFile(existingPaper.filePath);
-        updateData.filePath = req.file.path;
+        updateData.filePath = getRelativePath(req.file.path);
       }
 
       const questionPaper = await prisma.questionPaper.update({
@@ -232,17 +223,17 @@ class QuestionPaperController {
 
       // Invalidate cache
       await cacheService.deleteByPattern(
-        `question-papers:subject:${questionPaper.subjectId}`
+        `question-papers:subject:${questionPaper.subjectId}`,
       );
       await cacheService.delete(
-        cacheService.getCacheKey.subject(questionPaper.subjectId)
+        cacheService.getCacheKey.subject(questionPaper.subjectId),
       );
 
       return ApiResponse.success(
         res,
         200,
         "Question paper updated successfully",
-        questionPaper
+        questionPaper,
       );
     } catch (error) {
       // Clean up uploaded file on error
@@ -279,16 +270,16 @@ class QuestionPaperController {
 
       // Invalidate cache
       await cacheService.deleteByPattern(
-        `question-papers:subject:${questionPaper.subjectId}`
+        `question-papers:subject:${questionPaper.subjectId}`,
       );
       await cacheService.delete(
-        cacheService.getCacheKey.subject(questionPaper.subjectId)
+        cacheService.getCacheKey.subject(questionPaper.subjectId),
       );
 
       return ApiResponse.success(
         res,
         200,
-        "Question paper deleted successfully"
+        "Question paper deleted successfully",
       );
     } catch (error) {
       next(error);

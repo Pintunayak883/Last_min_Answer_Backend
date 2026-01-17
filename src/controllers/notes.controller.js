@@ -13,31 +13,22 @@ function getRelativePath(absolutePath) {
   return absolutePath.replace(/\\/g, "/");
 }
 
-// Helper to transform notes with fileUrl
+// Helper to transform notes without full URLs (frontend builds absolute URLs)
 function transformNotes(notes) {
-  const baseUrl = process.env.BASE_URL || "http://localhost:5000";
-
-  const getCleanPath = (filePath) => {
-    // Extract path starting from 'uploads/'
-    const uploadsIndex = filePath.indexOf("uploads");
-    if (uploadsIndex !== -1) {
-      return filePath.substring(uploadsIndex).replace(/\\/g, "/");
-    }
-    return filePath.replace(/\\/g, "/");
-  };
-
   if (Array.isArray(notes)) {
-    return notes.map((note) => ({
-      ...note,
-      fileName: note.title || "download.pdf",
-      fileUrl: `${baseUrl}/${getCleanPath(note.filePath)}`,
-      fileSize: note.fileSize || 0,
-    }));
+    return notes.map((note) => {
+      const { fileUrl, ...rest } = note || {};
+      return {
+        ...rest,
+        fileName: note.title || "download.pdf",
+        fileSize: note.fileSize || 0,
+      };
+    });
   }
+  const { fileUrl, ...rest } = notes || {};
   return {
-    ...notes,
+    ...rest,
     fileName: notes.title || "download.pdf",
-    fileUrl: `${baseUrl}/${getCleanPath(notes.filePath)}`,
     fileSize: notes.fileSize || 0,
   };
 }
@@ -85,7 +76,7 @@ class NotesController {
         res,
         201,
         "Notes uploaded successfully",
-        notes
+        notes,
       );
     } catch (error) {
       // Clean up uploaded file on error
@@ -139,7 +130,7 @@ class NotesController {
         res,
         200,
         "Notes fetched successfully",
-        transformedNotes
+        transformedNotes,
       );
     } catch (error) {
       next(error);
@@ -183,7 +174,7 @@ class NotesController {
         res,
         200,
         "Notes fetched successfully",
-        transformedNotes
+        transformedNotes,
       );
     } catch (error) {
       next(error);
@@ -216,7 +207,7 @@ class NotesController {
       // If new file uploaded, delete old file
       if (req.file) {
         await FileUtil.deleteFile(existingNotes.filePath);
-        updateData.filePath = req.file.path;
+        updateData.filePath = getRelativePath(req.file.path);
       }
 
       const notes = await prisma.notes.update({
@@ -227,7 +218,7 @@ class NotesController {
       // Invalidate cache
       await cacheService.deleteByPattern(`notes:subject:${notes.subjectId}`);
       await cacheService.delete(
-        cacheService.getCacheKey.subject(notes.subjectId)
+        cacheService.getCacheKey.subject(notes.subjectId),
       );
 
       return ApiResponse.success(res, 200, "Notes updated successfully", notes);
@@ -267,7 +258,7 @@ class NotesController {
       // Invalidate cache
       await cacheService.deleteByPattern(`notes:subject:${notes.subjectId}`);
       await cacheService.delete(
-        cacheService.getCacheKey.subject(notes.subjectId)
+        cacheService.getCacheKey.subject(notes.subjectId),
       );
 
       return ApiResponse.success(res, 200, "Notes deleted successfully");
