@@ -3,6 +3,37 @@ const cacheService = require("../services/cache.service");
 const ApiResponse = require("../utils/response.util");
 
 class SubjectController {
+  _normalizeSubjectDetail(subject) {
+    if (!subject || typeof subject !== "object") return subject;
+
+    const normalized = { ...subject };
+
+    // syllabus is modeled as a list relation in Prisma schema, but API contract expects
+    // syllabus: null | { id, filePath, year } (never [])
+    const rawSyllabus = normalized.syllabus;
+    let syllabus = null;
+
+    if (Array.isArray(rawSyllabus)) {
+      syllabus = rawSyllabus[0] || null;
+    } else if (rawSyllabus && typeof rawSyllabus === "object") {
+      syllabus = rawSyllabus;
+    }
+
+    normalized.syllabus = syllabus
+      ? {
+          id: syllabus.id,
+          filePath: syllabus.filePath,
+          year: syllabus.year ?? null,
+        }
+      : null;
+
+    if (!Array.isArray(normalized.questionPapers))
+      normalized.questionPapers = [];
+    if (!Array.isArray(normalized.notes)) normalized.notes = [];
+
+    return normalized;
+  }
+
   /**
    * Create subject
    * POST /subjects
@@ -37,19 +68,19 @@ class SubjectController {
 
       // Invalidate cache
       await cacheService.deleteByPattern(
-        cacheService.getCacheKey.subjectsByTerm(termId)
+        cacheService.getCacheKey.subjectsByTerm(termId),
       );
       await cacheService.delete(cacheService.getCacheKey.term(termId));
       await cacheService.delete(cacheService.getCacheKey.course(term.courseId));
       await cacheService.deleteByPattern(
-        cacheService.getCacheKey.subjectsByCourse(term.courseId)
+        cacheService.getCacheKey.subjectsByCourse(term.courseId),
       );
 
       return ApiResponse.success(
         res,
         201,
         "Subject created successfully",
-        subject
+        subject,
       );
     } catch (error) {
       next(error);
@@ -68,7 +99,7 @@ class SubjectController {
         return ApiResponse.error(
           res,
           400,
-          "termId is required; courseId is supported for backward compatibility"
+          "termId is required; courseId is supported for backward compatibility",
         );
       }
 
@@ -106,7 +137,8 @@ class SubjectController {
               ...rest,
               _count: {
                 ...subject._count,
-                syllabus: syllabus ? 1 : 0,
+                syllabus:
+                  Array.isArray(syllabus) && syllabus.length > 0 ? 1 : 0,
               },
             };
           });
@@ -117,7 +149,7 @@ class SubjectController {
           res,
           200,
           "Subjects fetched successfully",
-          subjects
+          subjects,
         );
       }
 
@@ -156,7 +188,7 @@ class SubjectController {
             ...rest,
             _count: {
               ...subject._count,
-              syllabus: syllabus ? 1 : 0,
+              syllabus: Array.isArray(syllabus) && syllabus.length > 0 ? 1 : 0,
             },
           };
         });
@@ -167,7 +199,7 @@ class SubjectController {
         res,
         200,
         "Subjects fetched successfully",
-        courseSubjects
+        courseSubjects,
       );
     } catch (error) {
       next(error);
@@ -186,6 +218,12 @@ class SubjectController {
       const cacheKey = cacheService.getCacheKey.subject(id);
       let subject = await cacheService.get(cacheKey);
 
+      if (subject) {
+        subject = this._normalizeSubjectDetail(subject);
+        // Refresh cache with normalized shape so local and production behave identically
+        await cacheService.set(cacheKey, subject);
+      }
+
       if (!subject) {
         subject = await prisma.subject.findUnique({
           where: { id },
@@ -197,7 +235,6 @@ class SubjectController {
                 },
               },
             },
-            syllabus: true,
             questionPapers: {
               orderBy: { year: "desc" },
             },
@@ -211,6 +248,16 @@ class SubjectController {
           return ApiResponse.error(res, 404, "Subject not found");
         }
 
+        const syllabus = await prisma.syllabus.findUnique({
+          where: { subjectId: id },
+          select: { id: true, filePath: true, year: true },
+        });
+
+        subject = this._normalizeSubjectDetail({
+          ...subject,
+          syllabus,
+        });
+
         // Store in cache
         await cacheService.set(cacheKey, subject);
       }
@@ -219,7 +266,7 @@ class SubjectController {
         res,
         200,
         "Subject fetched successfully",
-        subject
+        subject,
       );
     } catch (error) {
       next(error);
@@ -248,21 +295,21 @@ class SubjectController {
       // Invalidate cache
       await cacheService.delete(cacheService.getCacheKey.subject(id));
       await cacheService.deleteByPattern(
-        cacheService.getCacheKey.subjectsByTerm(subject.termId)
+        cacheService.getCacheKey.subjectsByTerm(subject.termId),
       );
       await cacheService.deleteByPattern(
-        cacheService.getCacheKey.subjectsByCourse(subject.term.courseId)
+        cacheService.getCacheKey.subjectsByCourse(subject.term.courseId),
       );
       await cacheService.delete(cacheService.getCacheKey.term(subject.termId));
       await cacheService.delete(
-        cacheService.getCacheKey.course(subject.term.courseId)
+        cacheService.getCacheKey.course(subject.term.courseId),
       );
 
       return ApiResponse.success(
         res,
         200,
         "Subject updated successfully",
-        subject
+        subject,
       );
     } catch (error) {
       next(error);
@@ -293,14 +340,14 @@ class SubjectController {
       // Invalidate cache
       await cacheService.delete(cacheService.getCacheKey.subject(id));
       await cacheService.deleteByPattern(
-        cacheService.getCacheKey.subjectsByTerm(subject.termId)
+        cacheService.getCacheKey.subjectsByTerm(subject.termId),
       );
       await cacheService.deleteByPattern(
-        cacheService.getCacheKey.subjectsByCourse(subject.term.courseId)
+        cacheService.getCacheKey.subjectsByCourse(subject.term.courseId),
       );
       await cacheService.delete(cacheService.getCacheKey.term(subject.termId));
       await cacheService.delete(
-        cacheService.getCacheKey.course(subject.term.courseId)
+        cacheService.getCacheKey.course(subject.term.courseId),
       );
       await cacheService.deleteByPattern(`syllabus:subject:${id}`);
       await cacheService.deleteByPattern(`question-papers:subject:${id}`);

@@ -7,8 +7,8 @@ const connectRedis = async () => {
   try {
     redisClient = redis.createClient({
       socket: {
-        host: config.redis.host,
-        port: config.redis.port,
+        host: config.redis.host || "127.0.0.1",
+        port: config.redis.port || 6379,
       },
       password: config.redis.password,
     });
